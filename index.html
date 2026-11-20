@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>64유형 성격유형검사</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: 720px 단일 컬럼. 검사 화면은 상단 고정 진행 막대, 결과는 유형 헤더 → 6지표 막대 → 리포트 카드 */
+  --bg:#f3f4f8;
+  --surface:#ffffff;
+  --ink:#1c2240;
+  --muted:#5b6282;
+  --line:#dde1ec;
+  --accent:#2d48d2;
+  --accent-soft:#e5e9fc;
+  --warm:#c98a0c;
+  --warm-soft:#fbf0d6;
+  --font-display:"Gowun Batang","Nanum Myeongjo",serif;
+  --font-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12152a; --surface:#1b1f38; --ink:#e8eaf6; --muted:#a3a9c9; --line:#2e3457;
+    --accent:#8ea0ff; --accent-soft:#262d58; --warm:#f0bd4f; --warm-soft:#3a3120;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12152a; --surface:#1b1f38; --ink:#e8eaf6; --muted:#a3a9c9; --line:#2e3457;
+  --accent:#8ea0ff; --accent-soft:#262d58; --warm:#f0bd4f; --warm-soft:#3a3120;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding:32px 20px 80px;display:flex;flex-direction:column;gap:24px}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:2rem}
+h2{font-size:1.4rem}
+h3{font-size:1.1rem}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-size:.8rem;font-weight:600;letter-spacing:.06em;color:var(--accent)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.btn{font:inherit;font-weight:600;border-radius:10px;padding:12px 20px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.lk button:focus-visible,.chip:focus-visible,.tgrid button:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.fact{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column}
+.fact b{font-family:var(--font-display);font-size:1.4rem;font-variant-numeric:tabular-nums}
+.axes-intro{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 16px;font-size:.92rem}
+.axes-intro div{display:flex;gap:8px}
+.axes-intro .k{font-weight:600;min-width:72px}
+details{border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:600}
+details ul,details ol{margin:10px 0 0;padding-left:20px}
+.notice{background:var(--warm-soft);border-radius:10px;padding:12px 14px;font-size:.88rem}
+
+/* test */
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.bar .row{justify-content:space-between;font-size:.88rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.track{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.fill{height:100%;background:var(--accent);width:0;transition:width .25s}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px;transition:opacity .2s}
+.q.done{opacity:.6}
+.q.missing{border-color:var(--warm);box-shadow:0 0 0 2px var(--warm-soft)}
+.q .t{font-size:1.05rem;font-weight:500}
+.q .n{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.lk{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px}
+.lk .ends{font-size:.8rem;color:var(--muted);white-space:nowrap}
+.dots{display:flex;justify-content:space-between;align-items:center}
+.lk button{border-radius:50%;border:2px solid var(--line);background:transparent;cursor:pointer;padding:0;flex:none}
+.lk button[data-v="-3"],.lk button[data-v="3"]{width:42px;height:42px}
+.lk button[data-v="-2"],.lk button[data-v="2"]{width:35px;height:35px}
+.lk button[data-v="-1"],.lk button[data-v="1"]{width:29px;height:29px}
+.lk button[data-v="0"]{width:24px;height:24px}
+.lk button.neg{border-color:var(--warm)}
+.lk button.pos{border-color:var(--accent)}
+.lk button.neg[aria-pressed="true"]{background:var(--warm)}
+.lk button.pos[aria-pressed="true"]{background:var(--accent)}
+.lk button.mid[aria-pressed="true"]{background:var(--muted);border-color:var(--muted)}
+.nav{display:flex;justify-content:space-between;gap:12px}
+.msg{color:var(--warm);font-weight:600;font-size:.92rem;min-height:1.5em}
+
+/* result */
+.hero{display:flex;flex-direction:column;gap:8px}
+.code{font-family:var(--font-display);font-size:3rem;font-weight:700;letter-spacing:.04em;line-height:1.1}
+.code span{color:var(--accent)}
+.tag{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:2px 12px;font-size:.85rem;font-weight:600}
+.tag.warm{background:var(--warm-soft);color:var(--warm)}
+.ax{display:flex;flex-direction:column;gap:6px}
+.ax .lbl{display:flex;justify-content:space-between;font-size:.9rem;font-variant-numeric:tabular-nums}
+.ax .lbl .on{font-weight:600;color:var(--ink)}
+.ax .lbl .off{color:var(--muted)}
+.ax .tr{position:relative;height:12px;background:var(--line);border-radius:99px;overflow:hidden}
+.ax .tr .f{position:absolute;top:0;bottom:0;background:var(--accent);border-radius:99px}
+.ax .tr .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--surface)}
+.ax .ttl{font-size:.8rem;color:var(--muted)}
+.list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start;counter-increment:s}
+.steps li::before{content:counter(s);display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:.9rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:6px 14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tgrid button{font:inherit;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.tgrid button b{font-family:var(--font-display);font-size:1.05rem;letter-spacing:.03em}
+.tgrid button span{font-size:.78rem;color:var(--muted);line-height:1.4}
+.tgrid button.me{border-color:var(--accent);background:var(--accent-soft)}
+.copybox{width:100%;min-height:120px;font:inherit;font-size:.88rem;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--ink)}
+.hidden{display:none !important}
+@media (max-width:560px){
+  h1{font-size:1.6rem}
+  .code{font-size:2.4rem}
+  .facts{grid-template-columns:1fr 1fr 1fr}
+  .axes-intro,.two{grid-template-columns:1fr}
+  .tgrid{grid-template-columns:repeat(2,1fr)}
+  .lk{grid-template-columns:1fr;gap:6px}
+  .lk .ends{display:none}
+  .lk .legend{display:flex !important}
+  .q{padding:16px}
+}
+
+.qrcard{flex-direction:row;align-items:center;gap:20px}
+.qrbox{background:#fff;border-radius:10px;padding:8px;flex:none;width:148px;height:148px}
+.qrbox svg,.qrbig svg{display:block;width:100%;height:100%}
+.qrtext{display:flex;flex-direction:column;gap:8px;min-width:0}
+.qrurl{font-size:.85rem;color:var(--muted);word-break:break-all;font-variant-numeric:tabular-nums}
+.overlay{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;text-align:center}
+.qrbig{background:#fff;border-radius:16px;padding:16px;width:min(70vh,86vw);height:min(70vh,86vw)}
+.overlay h2{font-size:clamp(1.4rem,4vw,2.4rem)}
+@media (max-width:560px){.qrcard{flex-direction:column;align-items:flex-start}}
+.legend{display:none;justify-content:space-between;font-size:.78rem;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none !important;scroll-behavior:auto !important}}
+</style>
+</head>
+<body>
+<main class="wrap" id="app">
+
+  <!-- 시작 화면 -->
+  <section id="v-intro" class="wrap" style="padding:0">
+    <div class="hero">
+      <p class="eyebrow">교육·모임용 자기이해 도구</p>
+      <h1>64유형 성격유형검사</h1>
+      <p class="muted">100개 문장에 얼마나 동의하는지 고르면, 6개 지표를 바탕으로 64가지 유형 중 하나와 맞춤 리포트를 보여 줍니다.</p>
+    </div>
+    <div class="card qrcard">
+      <div class="qrbox"><svg role="img" aria-label="검사 링크 QR 코드" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" class="segno"><path fill="#fff" d="M0 0h37v37h-37z"/><path class="qrline" stroke="#000" d="M2 2.5h7m1 0h2m3 0h2m1 0h3m3 0h1m3 0h7m-33 1h1m5 0h1m1 0h1m1 0h1m1 0h3m3 0h3m1 0h1m1 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h2m1 0h1m2 0h3m1 0h2m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m4 0h2m1 0h1m1 0h1m1 0h1m1 0h2m2 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m1 0h2m5 0h1m1 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m2 0h1m3 0h7m2 0h2m2 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-22 1h1m1 0h4m1 0h1m3 0h1m1 0h1m-25 1h1m2 0h7m2 0h1m1 0h1m1 0h3m1 0h1m2 0h1m1 0h1m2 0h1m1 0h3m-33 1h1m1 0h2m3 0h1m1 0h3m1 0h3m1 0h3m2 0h2m4 0h4m-31 1h1m1 0h1m2 0h1m2 0h3m1 0h1m1 0h2m3 0h4m1 0h1m2 0h5m-30 1h2m8 0h1m4 0h2m2 0h1m3 0h2m2 0h3m-33 1h3m1 0h1m1 0h1m1 0h3m1 0h2m1 0h1m1 0h1m1 0h2m2 0h1m2 0h2m-28 1h2m1 0h1m1 0h1m2 0h1m1 0h1m2 0h2m2 0h5m1 0h1m1 0h1m1 0h1m2 0h1m-30 1h1m1 0h1m1 0h2m2 0h5m1 0h1m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m3 0h1m-31 1h1m2 0h1m1 0h1m3 0h4m1 0h1m1 0h1m1 0h1m1 0h1m4 0h1m1 0h1m1 0h2m1 0h1m-31 1h1m2 0h2m2 0h3m2 0h3m5 0h8m-30 1h1m1 0h1m2 0h1m1 0h1m2 0h2m1 0h3m1 0h4m1 0h1m2 0h2m1 0h1m1 0h1m1 0h1m-32 1h6m1 0h2m2 0h8m1 0h1m1 0h5m1 0h4m-32 1h1m3 0h1m1 0h2m3 0h1m1 0h1m4 0h2m1 0h1m3 0h1m1 0h3m-29 1h1m1 0h6m3 0h1m2 0h1m1 0h2m3 0h1m3 0h1m1 0h1m2 0h1m-33 1h2m3 0h1m1 0h2m2 0h1m1 0h2m5 0h2m1 0h1m3 0h4m-31 1h1m2 0h2m1 0h2m2 0h1m3 0h1m7 0h2m2 0h1m1 0h1m1 0h3m-33 1h1m2 0h2m4 0h1m3 0h1m1 0h1m1 0h1m1 0h2m2 0h2m3 0h1m1 0h1m1 0h1m-33 1h3m2 0h3m2 0h5m1 0h1m3 0h1m3 0h5m2 0h2m-25 1h1m4 0h6m5 0h1m3 0h1m1 0h2m-32 1h7m1 0h2m1 0h1m2 0h4m1 0h2m1 0h3m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m1 0h1m1 0h2m2 0h1m2 0h2m4 0h2m3 0h5m-33 1h1m1 0h3m1 0h1m1 0h2m4 0h4m2 0h1m1 0h7m-29 1h1m1 0h3m1 0h1m1 0h1m4 0h2m1 0h1m1 0h2m1 0h1m2 0h2m1 0h1m1 0h4m-33 1h1m1 0h3m1 0h1m4 0h5m1 0h4m2 0h1m1 0h1m1 0h3m1 0h2m-33 1h1m5 0h1m2 0h1m1 0h2m6 0h1m7 0h6m-33 1h7m1 0h3m2 0h1m1 0h1m1 0h1m1 0h1m3 0h3m1 0h3"/></svg>
+</div>
+      <div class="qrtext">
+        <h3>휴대폰으로 참여하기</h3>
+        <p class="small">휴대폰 카메라로 QR 코드를 비추면 검사 페이지가 열립니다.</p>
+        <p class="qrurl">https://pilgrimonearth.github.io/personality-test/</p>
+        <div class="row"><button class="btn ghost" id="btn-qr" type="button">QR 크게 보기</button></div>
+      </div>
+    </div>
+    <div class="facts">
+      <div class="fact"><b>100</b><span class="small muted">문항</span></div>
+      <div class="fact"><b>약 20분</b><span class="small muted">소요 시간</span></div>
+      <div class="fact"><b>64</b><span class="small muted">결과 유형</span></div>
+    </div>
+    <div class="card">
+      <h2>6개 지표</h2>
+      <div class="axes-intro">
+        <div><span class="k">에너지</span><span>외향 E · 내향 I</span></div>
+        <div><span class="k">정보 인식</span><span>감각 S · 직관 N</span></div>
+        <div><span class="k">판단 기준</span><span>사고 T · 감정 F</span></div>
+        <div><span class="k">생활 양식</span><span>계획 J · 유연 P</span></div>
+        <div><span class="k">정서 반응</span><span>안정 A · 민감 R</span></div>
+        <div><span class="k">관계 방식</span><span>주도 L · 조화 H</span></div>
+      </div>
+      <p class="small muted">앞의 4개 지표로 16개 기본 유형을, 뒤의 2개 지표로 4개 세부 성향을 정해 16 × 4 = 64유형이 됩니다. 예: INFJ-RH</p>
+      <details>
+        <summary>응답 요령</summary>
+        <ul>
+          <li>‘되고 싶은 나’가 아니라 평소의 나를 떠올리며 답하세요.</li>
+          <li>오래 고민하지 말고 처음 떠오르는 느낌대로 고르세요.</li>
+          <li>가운데(보통)는 정말 판단하기 어려울 때만 고르세요.</li>
+          <li>응답은 저장되지 않습니다. 새로고침하거나 창을 닫으면 처음부터 다시 해야 합니다.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>모임 진행자 안내</summary>
+        <ol>
+          <li>시작 전 5분: 정답이 없는 검사이고 결과로 사람을 평가하지 않는다는 점을 안내합니다.</li>
+          <li>검사 20분: 각자 휴대폰으로 링크를 열어 응답합니다.</li>
+          <li>공유 20분: 결과 화면 맨 아래 ‘함께 이야기할 질문’ 3개로 짝 또는 소그룹 대화를 진행합니다.</li>
+          <li>마무리 10분: 성장 로드맵에서 이번 주에 해 볼 한 가지를 정해 돌아가며 말합니다.</li>
+        </ol>
+        <p class="small muted" style="margin-top:8px">참여자 결과는 서버에 모이지 않습니다. 필요하면 참여자가 ‘결과 요약 복사’로 직접 전달하게 하세요.</p>
+      </details>
+      <div class="row">
+        <button class="btn" id="btn-start" type="button">검사 시작하기</button>
+        <button class="btn ghost" id="btn-browse" type="button">전체 유형 살펴보기</button>
+      </div>
+    </div>
+    <p class="notice">이 검사는 교육과 자기이해를 돕기 위해 새로 만든 참고 도구이며, 표준화 절차를 거친 심리검사가 아닙니다. MBTI® 공식 검사와 관련이 없습니다. 결과를 채용·선발·진단에 쓰지 마세요.</p>
+  </section>
+
+  <!-- 검사 화면 -->
+  <section id="v-test" class="hidden" style="display:flex;flex-direction:column;gap:16px">
+    <div class="bar">
+      <div class="row"><span id="p-page">1 / 10쪽</span><span id="p-count">0 / 100 응답</span><span id="p-time">00:00</span></div>
+      <div class="track"><div class="fill" id="p-fill"></div></div>
+    </div>
+    <div id="q-list" style="display:flex;flex-direction:column;gap:14px"></div>
+    <p class="msg" id="q-msg" role="status"></p>
+    <div class="nav">
+      <button class="btn ghost" id="btn-prev" type="button">이전</button>
+      <button class="btn" id="btn-next" type="button">다음</button>
+    </div>
+  </section>
+
+  <!-- 결과/유형 보기 화면 -->
+  <section id="v-result" class="hidden" style="display:flex;flex-direction:column;gap:20px"></section>
+
+  <!-- 전체 유형 -->
+  <section id="v-browse" class="hidden" style="display:flex;flex-direction:column;gap:16px">
+    <div class="row" style="justify-content:space-between">
+      <h2>전체 유형 살펴보기</h2>
+      <button class="btn ghost" id="btn-browse-back" type="button">돌아가기</button>
+    </div>
+    <p class="muted small">기본 유형을 고른 뒤, 리포트 위쪽에서 세부 성향(안정·민감, 주도·조화)을 바꿔 볼 수 있습니다.</p>
+    <div class="tgrid" id="tgrid"></div>
+  </section>
+</main>
+  <div class="overlay hidden" id="qr-overlay" role="dialog" aria-modal="true" aria-labelledby="qr-ttl">
+    <h2 id="qr-ttl">휴대폰 카메라로 QR 코드를 비춰 주세요</h2>
+    <div class="qrbig"><svg role="img" aria-label="검사 링크 QR 코드" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" class="segno"><path fill="#fff" d="M0 0h37v37h-37z"/><path class="qrline" stroke="#000" d="M2 2.5h7m1 0h2m3 0h2m1 0h3m3 0h1m3 0h7m-33 1h1m5 0h1m1 0h1m1 0h1m1 0h3m3 0h3m1 0h1m1 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h2m1 0h1m2 0h3m1 0h2m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m4 0h2m1 0h1m1 0h1m1 0h1m1 0h2m2 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m1 0h2m5 0h1m1 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m2 0h1m3 0h7m2 0h2m2 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-22 1h1m1 0h4m1 0h1m3 0h1m1 0h1m-25 1h1m2 0h7m2 0h1m1 0h1m1 0h3m1 0h1m2 0h1m1 0h1m2 0h1m1 0h3m-33 1h1m1 0h2m3 0h1m1 0h3m1 0h3m1 0h3m2 0h2m4 0h4m-31 1h1m1 0h1m2 0h1m2 0h3m1 0h1m1 0h2m3 0h4m1 0h1m2 0h5m-30 1h2m8 0h1m4 0h2m2 0h1m3 0h2m2 0h3m-33 1h3m1 0h1m1 0h1m1 0h3m1 0h2m1 0h1m1 0h1m1 0h2m2 0h1m2 0h2m-28 1h2m1 0h1m1 0h1m2 0h1m1 0h1m2 0h2m2 0h5m1 0h1m1 0h1m1 0h1m2 0h1m-30 1h1m1 0h1m1 0h2m2 0h5m1 0h1m1 0h1m1 0h1m1 0h1m2 0h1m1 0h1m3 0h1m-31 1h1m2 0h1m1 0h1m3 0h4m1 0h1m1 0h1m1 0h1m1 0h1m4 0h1m1 0h1m1 0h2m1 0h1m-31 1h1m2 0h2m2 0h3m2 0h3m5 0h8m-30 1h1m1 0h1m2 0h1m1 0h1m2 0h2m1 0h3m1 0h4m1 0h1m2 0h2m1 0h1m1 0h1m1 0h1m-32 1h6m1 0h2m2 0h8m1 0h1m1 0h5m1 0h4m-32 1h1m3 0h1m1 0h2m3 0h1m1 0h1m4 0h2m1 0h1m3 0h1m1 0h3m-29 1h1m1 0h6m3 0h1m2 0h1m1 0h2m3 0h1m3 0h1m1 0h1m2 0h1m-33 1h2m3 0h1m1 0h2m2 0h1m1 0h2m5 0h2m1 0h1m3 0h4m-31 1h1m2 0h2m1 0h2m2 0h1m3 0h1m7 0h2m2 0h1m1 0h1m1 0h3m-33 1h1m2 0h2m4 0h1m3 0h1m1 0h1m1 0h1m1 0h2m2 0h2m3 0h1m1 0h1m1 0h1m-33 1h3m2 0h3m2 0h5m1 0h1m3 0h1m3 0h5m2 0h2m-25 1h1m4 0h6m5 0h1m3 0h1m1 0h2m-32 1h7m1 0h2m1 0h1m2 0h4m1 0h2m1 0h3m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m1 0h1m1 0h2m2 0h1m2 0h2m4 0h2m3 0h5m-33 1h1m1 0h3m1 0h1m1 0h2m4 0h4m2 0h1m1 0h7m-29 1h1m1 0h3m1 0h1m1 0h1m4 0h2m1 0h1m1 0h2m1 0h1m2 0h2m1 0h1m1 0h4m-33 1h1m1 0h3m1 0h1m4 0h5m1 0h4m2 0h1m1 0h1m1 0h3m1 0h2m-33 1h1m5 0h1m2 0h1m1 0h2m6 0h1m7 0h6m-33 1h7m1 0h3m2 0h1m1 0h1m1 0h1m1 0h1m3 0h3m1 0h3"/></svg>
+</div>
+    <p class="qrurl">https://pilgrimonearth.github.io/personality-test/</p>
+    <button class="btn" id="btn-qr-close" type="button">닫기</button>
+  </div>
+
+
+<script>
+(function(){
+"use strict";
+
+const AXES = [
+  {id:"EI", a:"E", b:"I", an:"외향", bn:"내향", title:"에너지 방향"},
+  {id:"SN", a:"S", b:"N", an:"감각", bn:"직관", title:"정보 인식"},
+  {id:"TF", a:"T", b:"F", an:"사고", bn:"감정", title:"판단 기준"},
+  {id:"JP", a:"J", b:"P", an:"계획", bn:"유연", title:"생활 양식"},
+  {id:"AR", a:"A", b:"R", an:"안정", bn:"민감", title:"정서 반응"},
+  {id:"LH", a:"L", b:"H", an:"주도", bn:"조화", title:"관계 방식"}
+];
+
+/* 문항: [문장, 방향] 방향 1 = 동의할수록 앞 극(a), -1 = 뒤 극(b) */
+const RAW = {
+  EI:[
+    ["처음 만난 사람과도 쉽게 이야기를 시작한다.",1],
+    ["하루 종일 사람을 만나고 나면 혼자 있는 시간이 꼭 필요하다.",-1],
+    ["모임에서 분위기를 띄우는 역할을 자주 맡는다.",1],
+    ["생각을 말로 꺼내면서 정리하는 편이다.",1],
+    ["중요한 일은 혼자 충분히 생각한 뒤에 말한다.",-1],
+    ["주말에 약속이 없으면 허전하다.",1],
+    ["여러 사람 앞에서 주목받는 상황이 부담스럽다.",-1],
+    ["새로운 모임에 가면 먼저 다가가 인사한다.",1],
+    ["넓은 인맥보다 깊은 대화를 나누는 몇몇 친구가 더 편하다.",-1],
+    ["전화 통화보다 문자나 메시지가 편하다.",-1],
+    ["활기찬 장소에 있으면 기운이 난다.",1],
+    ["회의에서 발언하기 전에 할 말을 머릿속으로 미리 다듬는다.",-1],
+    ["낯선 사람들과 함께하는 활동에도 즐겁게 참여한다.",1],
+    ["혼자 하는 취미가 가장 편하게 쉬는 방법이다.",-1],
+    ["사람들과 함께 일할 때 아이디어가 더 잘 떠오른다.",1],
+    ["말수가 적다는 이야기를 종종 듣는다.",-1],
+    ["행사나 모임 소식을 들으면 일단 가 보고 싶다.",1],
+    ["대화 중 침묵이 흘러도 크게 어색하지 않다.",-1]
+  ],
+  SN:[
+    ["설명서를 순서대로 읽고 그대로 따라 하는 편이다.",1],
+    ["‘만약에 ~라면’ 하고 상상하는 시간이 즐겁다.",-1],
+    ["새로운 방법보다 검증된 방법이 더 믿음직하다.",1],
+    ["사실 자체보다 그 사실이 뜻하는 바에 더 관심이 간다.",-1],
+    ["구체적인 숫자와 사례가 있어야 이해가 잘 된다.",1],
+    ["큰 그림을 먼저 그려야 세부 작업을 시작할 수 있다.",-1],
+    ["먼 미래보다 지금 눈앞의 일을 처리하는 데 집중한다.",1],
+    ["비유나 은유로 설명하는 것을 좋아한다.",-1],
+    ["처음 해 보는 일보다 경험해 본 일이 편하다.",1],
+    ["대화하다 보면 주제가 엉뚱한 방향으로 뻗어 나가곤 한다.",-1],
+    ["문서나 작업에서 작은 오류를 잘 찾아낸다.",1],
+    ["미래의 가능성을 생각하면 설렌다.",-1],
+    ["실제로 쓸모없는 이론에는 별로 흥미가 없다.",1],
+    ["겉으로 드러나지 않은 패턴이나 연결고리가 먼저 눈에 띈다.",-1],
+    ["일할 때 정해진 절차를 따르는 것이 편하다.",1],
+    ["같은 일도 매번 다른 방식으로 해 보고 싶다.",-1],
+    ["보고 듣고 맛본 것을 생생하게 기억한다.",1],
+    ["설명하기 어려운 직감이 맞았던 경험이 많다.",-1]
+  ],
+  TF:[
+    ["결정을 내릴 때 논리와 근거가 가장 중요하다.",1],
+    ["상대의 감정을 살피느라 하고 싶은 말을 삼킬 때가 있다.",-1],
+    ["친한 사람이라도 잘못은 분명히 지적해야 한다.",1],
+    ["누군가 고민을 털어놓으면 해결책보다 공감이 먼저다.",-1],
+    ["공정한 기준이 개인 사정보다 우선이다.",1],
+    ["갈등이 생기면 관계가 상하지 않는 쪽을 택한다.",-1],
+    ["비판을 들어도 내용이 맞으면 크게 상처받지 않는다.",1],
+    ["결정이 사람들에게 미칠 영향을 가장 먼저 생각한다.",-1],
+    ["토론에서 논리로 이기는 것이 즐겁다.",1],
+    ["칭찬과 격려가 일하는 데 큰 동기가 된다.",-1],
+    ["감정적인 호소보다 데이터가 더 설득력 있다.",1],
+    ["다른 사람의 기분 변화를 금방 알아챈다.",-1],
+    ["효율을 위해서라면 다소 냉정해 보여도 괜찮다.",1],
+    ["분위기가 어색해지면 내가 나서서 풀려고 한다.",-1],
+    ["위로하는 것보다 원인을 분석하는 것이 쉽다.",1],
+    ["옳고 그름보다 서로의 마음이 더 중요할 때가 많다.",-1],
+    ["결과가 좋다면 과정의 불편함은 감수할 수 있다.",1],
+    ["부탁을 거절하기가 어렵다.",-1]
+  ],
+  JP:[
+    ["여행을 가기 전에 일정을 꼼꼼히 짠다.",1],
+    ["마감 직전에 집중력이 가장 좋아진다.",-1],
+    ["할 일 목록을 만들고 하나씩 지우는 것이 뿌듯하다.",1],
+    ["계획이 갑자기 바뀌어도 크게 스트레스받지 않는다.",-1],
+    ["책상이나 방이 정리되어 있어야 마음이 편하다.",1],
+    ["선택지를 마지막까지 열어 두는 편이다.",-1],
+    ["약속 시간보다 일찍 도착하는 편이다.",1],
+    ["즉흥적으로 떠나는 나들이가 즐겁다.",-1],
+    ["결정을 빨리 내리고 다음 단계로 넘어가고 싶다.",1],
+    ["여러 일을 동시에 벌여 놓고 번갈아 가며 한다.",-1],
+    ["일을 시작하기 전에 순서와 방법부터 정한다.",1],
+    ["규칙은 상황에 따라 융통성 있게 적용해야 한다.",-1],
+    ["달력이나 일정표를 꾸준히 관리한다.",1],
+    ["정해진 틀이 많으면 답답하다.",-1],
+    ["맡은 일은 미리 끝내 두어야 마음이 놓인다.",1],
+    ["그날 기분에 따라 하루를 보내는 것이 좋다.",-1],
+    ["결론이 나지 않은 채 남아 있는 일이 계속 신경 쓰인다.",1],
+    ["새 정보가 들어오면 이미 내린 결정도 다시 검토한다.",-1]
+  ],
+  AR:[
+    ["실수를 해도 금방 털고 다음으로 넘어간다.",1],
+    ["다른 사람이 나를 어떻게 볼지 자주 신경 쓴다.",-1],
+    ["압박감이 큰 상황에서도 침착함을 유지한다.",1],
+    ["작은 일에도 걱정이 꼬리를 물고 이어진다.",-1],
+    ["내 능력에 대체로 자신이 있다.",1],
+    ["기분이 하루에도 여러 번 오르내린다.",-1],
+    ["결과가 불확실해도 잠을 잘 잔다.",1],
+    ["지난 대화를 곱씹으며 후회할 때가 많다.",-1],
+    ["비판을 들어도 자존감이 크게 흔들리지 않는다.",1],
+    ["일이 잘되고 있어도 더 잘해야 한다는 압박을 느낀다.",-1],
+    ["낯선 상황에서도 대체로 마음이 편하다.",1],
+    ["사소한 피드백에도 마음이 오래 쓰인다.",-1],
+    ["스트레스를 받아도 회복이 빠른 편이다.",1],
+    ["혹시 모를 문제를 미리 걱정하며 대비한다.",-1]
+  ],
+  LH:[
+    ["모임에서 방향을 정해야 할 때 내가 먼저 제안한다.",1],
+    ["의견이 다르면 일단 상대에게 맞춰 주는 편이다.",-1],
+    ["내가 원하는 것을 분명하게 요구할 수 있다.",1],
+    ["내가 옳다고 본 결정보다 모두가 합의한 결정이 낫다.",-1],
+    ["책임자가 정해지지 않으면 내가 맡는다.",1],
+    ["앞에 나서기보다 뒤에서 돕는 역할이 편하다.",-1],
+    ["경쟁하는 상황에서 더 의욕이 생긴다.",1],
+    ["팀 분위기가 성과만큼 중요하다.",-1],
+    ["다른 사람을 설득하는 일이 즐겁다.",1],
+    ["상대의 의견을 끝까지 듣고 나서 내 생각을 말한다.",-1],
+    ["일의 주도권을 쥐고 있을 때 마음이 편하다.",1],
+    ["갈등이 생기면 중재하는 역할을 자주 맡는다.",-1],
+    ["필요하다면 혼자서라도 반대 의견을 낸다.",1],
+    ["함께하는 사람들이 편안한지가 늘 신경 쓰인다.",-1]
+  ]
+};
+
+/* 지표가 섞이도록 순서대로 하나씩 번갈아 배치 */
+const ITEMS = [];
+(function build(){
+  const pools = AXES.map(ax => RAW[ax.id].map(r => ({t:r[0], k:r[1], ax:ax.id})));
+  let left = true;
+  while(left){
+    left = false;
+    pools.forEach(p => { if(p.length){ ITEMS.push(p.shift()); left = true; } });
+  }
+})();
+
+const TYPES = {
+  ISTJ:{name:"성실한 관리자",
+    profile:"맡은 일을 끝까지 책임지는 신뢰의 사람입니다. 사실과 경험을 바탕으로 판단하고, 약속과 절차를 소중히 여깁니다. 말보다 행동으로 믿음을 쌓습니다.",
+    strengths:["꾸준함과 책임감","정확한 기록과 사실 확인","위기에도 흔들리지 않는 원칙"],
+    blind:["새로운 방식을 낯설어하고 미룸","감정 표현이 적어 차갑게 보일 수 있음","힘든 일을 혼자 떠안음"],
+    others:"주변에서는 ‘믿고 맡길 수 있는 사람’으로 봅니다. 가까운 관계에서는 말보다 꾸준히 챙기는 방식으로 마음을 보여서, 상대가 그 마음을 알아채지 못하고 서운해할 수 있습니다.",
+    env:"역할과 기준이 분명하고, 성실함이 정당하게 평가받는 환경",
+    values:["안정","책임","정확성"],
+    growth:["이번 주에 고마운 마음을 말로 한 번 표현하기","익숙한 업무 하나를 새 방식으로 시도해 보기","혼자 처리하던 일 하나를 동료와 나누기"]},
+  ISFJ:{name:"따뜻한 수호자",
+    profile:"조용히 곁을 지키며 필요한 것을 먼저 챙기는 사람입니다. 사람들의 작은 필요와 감정을 잘 기억하고, 익숙한 방식으로 꼼꼼히 돌봅니다.",
+    strengths:["세심한 배려와 기억력","성실한 실행력","공동체를 지키는 헌신"],
+    blind:["자기 필요를 뒤로 미룸","거절을 어려워함","변화 앞에서 불안해함"],
+    others:"따뜻하고 한결같은 사람으로 비칩니다. 관계에서 주로 주는 쪽에 서기 때문에, 지쳐도 티를 내지 않다가 서운함이 한꺼번에 쌓일 수 있습니다.",
+    env:"서로 돕는 분위기이고, 돌봄과 지원이 의미 있게 인정받는 현장",
+    values:["헌신","조화","안정"],
+    growth:["하루 한 번 ‘내가 원하는 것’을 적어 보기","부담스러운 부탁 하나를 정중히 거절해 보기","변화가 생기면 걱정 대신 궁금한 점 목록 만들기"]},
+  INFJ:{name:"통찰하는 조언자",
+    profile:"사람과 상황 속 깊은 의미를 읽어 내는 조언자입니다. 조용하지만 확고한 가치관을 지니고, 다른 사람이 성장하도록 돕는 데서 보람을 느낍니다.",
+    strengths:["사람의 속마음을 읽는 통찰","멀리 내다보는 비전","신념에 따른 꾸준한 실천"],
+    blind:["완벽주의로 쉽게 지침","속마음을 잘 드러내지 않음","갈등을 피하다가 관계를 단번에 정리함"],
+    others:"깊이 있고 믿을 만한 상담자로 여겨지지만, 정작 본인 속은 알기 어렵다는 말을 듣습니다. 소수와 깊은 관계를 맺으며, 한 번 신뢰가 깨지면 회복이 어렵습니다.",
+    env:"사람을 돕는 의미가 분명하고, 혼자 깊이 생각할 시간이 보장되는 곳",
+    values:["의미","진정성","성장"],
+    growth:["내 고민을 믿을 만한 한 사람에게 털어놓기","시작 전에 ‘이 정도면 충분하다’는 기준 정하기","불편한 감정은 쌓이기 전에 작게 말하기"]},
+  INTJ:{name:"전략적 설계자",
+    profile:"복잡한 문제를 구조로 파악하고 장기 전략을 세우는 설계자입니다. 독립적으로 생각하며, 비효율과 막연함을 견디기 어려워합니다.",
+    strengths:["체계적인 분석과 전략","높은 기준과 자기 주도성","문제의 핵심을 짚는 능력"],
+    blind:["감정 문제를 비효율로 여김","자기 판단을 과신함","설명 없이 결론만 전달함"],
+    others:"유능하지만 다가가기 어려운 사람으로 보일 수 있습니다. 가까운 사람에게는 문제를 해결해 주는 방식으로 마음을 표현하는데, 상대는 공감을 먼저 원할 수 있습니다.",
+    env:"자율성과 전문성이 존중되고, 장기 목표를 직접 설계할 수 있는 곳",
+    values:["역량","독립","개선"],
+    growth:["결론을 말할 때 ‘왜 그렇게 생각했는지’ 한 문장 덧붙이기","반대 의견 하나를 찾아 진지하게 검토하기","해결책을 내기 전에 상대의 마음을 먼저 묻기"]},
+  ISTP:{name:"침착한 해결사",
+    profile:"문제가 생기면 조용히 원인을 찾아 직접 해결하는 사람입니다. 관찰력이 좋고 위기에 침착하며, 자유롭게 움직일 수 있을 때 실력이 드러납니다.",
+    strengths:["위기 대응력","도구와 구조를 다루는 실전 감각","군더더기 없는 효율"],
+    blind:["감정 표현이 적어 무관심해 보임","장기 계획을 미룸","흥미가 떨어지면 쉽게 손을 놓음"],
+    others:"말수는 적지만 필요할 때 확실히 도와주는 사람으로 봅니다. 관계에서 개인 공간을 중요하게 여겨, 상대가 거리감을 느낄 수 있습니다.",
+    env:"직접 다루고 고칠 대상이 있고, 간섭이 적은 현장",
+    values:["자유","실용","능숙함"],
+    growth:["가까운 사람에게 내 근황을 먼저 알리기","3개월 뒤 목표 하나를 적어 두기","지루한 일도 끝맺음까지 해 보기"]},
+  ISFP:{name:"온화한 예술가",
+    profile:"자기만의 감각과 가치로 조용히 주변을 아름답게 만드는 사람입니다. 지금 이 순간의 경험을 소중히 여기고, 강요보다 자유로운 표현을 좋아합니다.",
+    strengths:["섬세한 감수성과 미적 감각","상대를 있는 그대로 받아들이는 너그러움","유연한 적응력"],
+    blind:["갈등을 피해 속으로만 삭임","계획과 마감 관리가 약함","자기 가치를 낮게 봄"],
+    others:"온화하고 편안한 사람으로 비칩니다. 관계에서 말보다 행동과 작은 선물로 마음을 전하며, 비판에 쉽게 상처받습니다.",
+    env:"개인의 방식이 존중되고, 손으로 만들거나 사람을 직접 돌보는 일",
+    values:["자유","진정성","아름다움"],
+    growth:["불편한 점 하나를 부드럽게 말로 표현하기","중요한 일의 마감을 달력에 적어 두기","내가 잘한 일을 기록해 두기"]},
+  INFP:{name:"이상을 품은 중재자",
+    profile:"마음속 이상과 가치를 따라 사는 사람입니다. 다른 사람의 가능성을 믿고, 글과 예술과 대화로 깊은 감정을 표현합니다.",
+    strengths:["깊은 공감과 진정성","풍부한 상상력과 표현력","가치에 대한 헌신"],
+    blind:["이상과 현실의 차이에 쉽게 낙담함","결정을 미룸","비판을 나에 대한 공격으로 받아들임"],
+    others:"따뜻하고 생각이 깊은 사람으로 봅니다. 관계에서 진심을 가장 중요하게 여기며, 가치관이 맞지 않으면 조용히 거리를 둡니다.",
+    env:"의미 있는 목적을 위해 일하고, 창의성과 개인 방식이 허용되는 곳",
+    values:["진정성","의미","연민"],
+    growth:["큰 이상을 이번 주에 할 수 있는 작은 행동으로 쪼개기","결정할 기한을 스스로 정하기","피드백을 나에 대한 평가가 아닌 결과물에 대한 의견으로 구분해 듣기"]},
+  INTP:{name:"호기심 많은 사색가",
+    profile:"원리를 파고들며 생각의 틀을 계속 새로 짜는 사색가입니다. 논리적 일관성을 중시하고, 흥미로운 문제 앞에서는 시간 가는 줄 모릅니다.",
+    strengths:["정밀한 논리와 분석","독창적인 아이디어","편견 없는 탐구심"],
+    blind:["생각만 하고 실행을 미룸","일상적인 의무를 소홀히 함","감정이 오가는 대화를 어려워함"],
+    others:"똑똑하지만 엉뚱하고 무심한 사람으로 보일 수 있습니다. 관계에서 지적인 대화로 친밀감을 느끼며, 상대의 감정 신호를 놓치기 쉽습니다.",
+    env:"복잡한 문제를 자유롭게 탐구하고, 형식적 절차가 적은 곳",
+    values:["지식","자율","정확성"],
+    growth:["아이디어 하나를 이번 주에 작게 실행하기","반복 업무는 알림과 체크리스트로 관리하기","대화 중 상대의 기분을 한 번 물어보기"]},
+  ESTP:{name:"행동하는 개척자",
+    profile:"현장에서 빠르게 판단하고 바로 움직이는 개척자입니다. 위험을 크게 두려워하지 않고, 사람과 상황을 읽는 감각이 뛰어납니다.",
+    strengths:["순발력과 실행력","현실적인 협상 감각","사람을 끌어들이는 활력"],
+    blind:["충동적으로 결정함","장기적인 결과를 가볍게 봄","반복 업무에 쉽게 지루해함"],
+    others:"재미있고 대담한 사람으로 비칩니다. 관계에서 함께 활동하며 가까워지지만, 깊은 감정 이야기는 미루는 편입니다.",
+    env:"변화가 빠르고, 결과가 바로 보이며, 현장에서 직접 뛰는 일",
+    values:["도전","자유","성과"],
+    growth:["큰 결정은 하루 묵힌 뒤 다시 보기","6개월 뒤 결과를 미리 적어 보기","가까운 사람과 활동 없이 대화만 하는 시간 갖기"]},
+  ESFP:{name:"활기찬 연출가",
+    profile:"어디서든 분위기를 밝히고 사람들을 즐겁게 하는 연출가입니다. 지금 이 순간에 충실하고, 다른 사람의 필요에 바로 반응합니다.",
+    strengths:["밝은 에너지와 친화력","실제적이고 빠른 도움","상황 적응력"],
+    blind:["계획과 돈 관리가 느슨함","갈등과 비판을 피함","지루함을 견디기 어려움"],
+    others:"함께 있으면 즐거운 사람으로 봅니다. 관계에서 아낌없이 표현하지만, 무거운 이야기를 피하면 상대가 깊이가 부족하다고 느낄 수 있습니다.",
+    env:"사람을 직접 만나고, 활동적이며, 반응이 바로 오는 일",
+    values:["즐거움","관계","자유"],
+    growth:["이번 달 지출을 한 번 정리해 보기","미뤄 둔 불편한 대화 하나를 해 보기","반복 업무에 작은 보상을 붙이기"]},
+  ENFP:{name:"열정적인 발견자",
+    profile:"새로운 가능성과 사람에게 열정을 불어넣는 발견자입니다. 아이디어가 풍부하고, 다른 사람의 잠재력을 찾아 주는 데 능합니다.",
+    strengths:["영감을 주는 열정","서로 다른 것을 잇는 창의력","따뜻한 격려"],
+    blind:["시작은 많고 마무리는 약함","관심이 쉽게 옮겨 감","거절과 비판에 크게 흔들림"],
+    others:"에너지가 넘치고 따뜻한 사람으로 비칩니다. 관계에서 깊은 교감을 원하며, 상대 반응이 미지근하면 쉽게 서운해합니다.",
+    env:"새로운 시도를 환영하고, 사람과 아이디어가 함께 움직이는 곳",
+    values:["가능성","진정성","관계"],
+    growth:["진행 중인 일 하나를 끝까지 마무리하기","새 아이디어는 바로 시작하지 말고 목록에 적어 두기","상대 반응이 미지근할 때 짐작하기 전에 직접 물어보기"]},
+  ENTP:{name:"기발한 도전자",
+    profile:"기존 틀을 비틀어 새로운 해법을 찾는 도전자입니다. 토론과 아이디어 실험을 즐기며, 안 된다는 말에 오히려 흥미를 느낍니다.",
+    strengths:["빠른 발상 전환","토론으로 아이디어를 다듬는 힘","위기 속 기회 포착"],
+    blind:["반박이 상대에게 공격으로 느껴짐","세부 실행을 소홀히 함","약속을 쉽게 바꿈"],
+    others:"기발하고 말 잘하는 사람으로 봅니다. 관계에서 지적인 자극을 주고받지만, 장난스러운 반박이 상대를 지치게 할 수 있습니다.",
+    env:"혁신과 실험이 허용되고, 여러 분야의 문제를 넘나드는 일",
+    values:["혁신","자유","지적 자극"],
+    growth:["반박하기 전에 상대 주장의 장점을 먼저 말하기","아이디어마다 실행 담당자와 기한 붙이기","약속을 바꿔야 하면 미리 알리기"]},
+  ESTJ:{name:"든든한 운영자",
+    profile:"목표와 절차를 세우고 사람들을 움직여 일을 완수하는 운영자입니다. 현실적이고 결단력 있으며, 질서와 책임을 중시합니다.",
+    strengths:["조직력과 추진력","분명한 기준과 실행","책임감"],
+    blind:["다른 방식을 기다리는 인내심이 부족함","감정 문제를 비효율로 여김","모든 것을 통제하려 함"],
+    others:"든든하고 확실한 사람으로 비치지만, 때로 엄격하다는 평을 듣습니다. 관계에서 책임을 다하는 것으로 애정을 표현합니다.",
+    env:"역할과 성과 기준이 분명하고, 조직을 이끌 기회가 있는 곳",
+    values:["질서","책임","성과"],
+    growth:["회의에서 내 의견보다 다른 사람 의견을 먼저 묻기","결과뿐 아니라 노력도 칭찬하기","일을 맡길 때 방법은 상대에게 맡겨 보기"]},
+  ESFJ:{name:"다정한 돌봄이",
+    profile:"사람들을 연결하고 모두가 편안하도록 챙기는 사람입니다. 공동체의 분위기와 예의를 중시하며, 실제적인 도움으로 마음을 전합니다.",
+    strengths:["배려심과 친화력","공동체를 묶는 조직력","책임감 있는 실행"],
+    blind:["인정받지 못하면 크게 서운해함","다른 사람 눈치를 많이 봄","갈등을 덮어 두려 함"],
+    others:"다정하고 믿음직한 사람으로 봅니다. 관계에서 세심하게 챙기며, 같은 만큼의 관심이 돌아오지 않으면 상처받습니다.",
+    env:"사람을 직접 돕고, 협력과 감사 표현이 자연스러운 곳",
+    values:["조화","헌신","소속"],
+    growth:["칭찬이 없어도 스스로 잘한 점을 인정하기","다른 사람의 평가보다 내 기준을 먼저 세우기","갈등을 덮지 말고 차분히 이야기하기"]},
+  ENFJ:{name:"이끄는 격려자",
+    profile:"사람의 가능성을 믿고 공동의 목표로 이끄는 격려자입니다. 공감 능력과 말솜씨로 사람들을 하나로 모읍니다.",
+    strengths:["사람을 성장시키는 격려","비전 제시와 설득력","집단 분위기를 읽는 감각"],
+    blind:["남을 돕느라 자신을 돌보지 않음","사람과 일을 지나치게 이상화함","비판을 관계의 위기로 받아들임"],
+    others:"따뜻하고 영향력 있는 리더로 비칩니다. 관계에서 상대의 성장을 응원하지만, 때로 간섭으로 느껴질 수 있습니다.",
+    env:"사람을 가르치거나 이끌고, 공동의 가치를 실현하는 곳",
+    values:["성장","조화","영향력"],
+    growth:["돕기 전에 상대가 도움을 원하는지 묻기","일주일에 한 번 나만을 위한 시간 확보하기","비판은 관계가 아닌 일에 대한 정보로 듣기"]},
+  ENTJ:{name:"결단력 있는 지휘관",
+    profile:"목표를 정하면 사람과 자원을 조직해 끝까지 밀어붙이는 지휘관입니다. 전략적이고 결단이 빠르며, 비효율을 참지 않습니다.",
+    strengths:["전략적 리더십","빠르고 단호한 결정","높은 목표 설정"],
+    blind:["지나치게 직설적임","다른 사람의 속도를 기다리지 못함","일에 몰두해 관계를 소홀히 함"],
+    others:"유능하고 강한 사람으로 비치지만, 위압적이라는 평을 듣기도 합니다. 관계에서도 목표와 계획을 함께 세우려 합니다.",
+    env:"큰 목표와 권한이 주어지고, 성과로 평가받는 곳",
+    values:["성취","효율","리더십"],
+    growth:["지시 대신 질문으로 대화 시작하기","결정 전에 가장 조용한 사람의 의견 듣기","일정표에 관계를 위한 시간도 넣기"]}
+};
+const ORDER = ["ISTJ","ISFJ","INFJ","INTJ","ISTP","ISFP","INFP","INTP","ESTP","ESFP","ENFP","ENTP","ESTJ","ESFJ","ENFJ","ENTJ"];
+
+const MOD = {
+  A:{name:"안정형", text:"스트레스 상황에서도 비교적 평정심을 유지하고 자기 판단을 믿습니다. 실패를 빨리 털어 내는 회복력이 장점이지만, 위험 신호나 다른 사람의 불안을 가볍게 넘길 수 있습니다.", tip:"중요한 일은 ‘놓친 위험이 없는지’ 한 번 더 점검하기"},
+  R:{name:"민감형", text:"작은 변화와 위험 신호를 빨리 알아차리고, 더 잘하려는 동기가 강합니다. 이 민감함은 꼼꼼함과 성장의 원동력이지만, 걱정과 자기비판으로 쉽게 지칠 수 있습니다.", tip:"걱정을 ‘내가 할 수 있는 일’과 ‘할 수 없는 일’로 나눠 적어 보기"},
+  L:{name:"주도형", text:"방향을 제시하고 필요한 것을 분명히 요구합니다. 모임에서 결정을 앞당기는 힘이 있지만, 다른 사람의 의견이 묻힐 수 있습니다.", tip:"결정 전에 아직 말하지 않은 사람에게 먼저 물어보기"},
+  H:{name:"조화형", text:"함께하는 사람들의 마음과 합의를 중시합니다. 팀을 편안하게 만드는 힘이 있지만, 내 의견을 늦게 내거나 삼킬 수 있습니다.", tip:"회의에서 내 의견을 한 번은 먼저 말해 보기"}
+};
+const SUB = {AL:"단단한 추진형", AH:"여유로운 조율형", RL:"열정적 도전형", RH:"섬세한 공감형"};
+
+const QUESTIONS = [
+  "결과에서 가장 공감되는 부분과 공감되지 않는 부분은 무엇인가요?",
+  "나와 지표가 반대인 사람과 함께할 때 어떤 점이 어렵고, 어떤 점이 도움이 되나요?",
+  "성장 로드맵 중 이번 주에 실제로 해 볼 한 가지는 무엇인가요?"
+];
+
+const PER = 10;
+const PAGES = Math.ceil(ITEMS.length / PER);
+let answers = new Array(ITEMS.length).fill(null);
+let page = 0, t0 = 0, timer = null, myCode = null, myPct = null, backTo = "intro";
+
+const $ = id => document.getElementById(id);
+const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+
+function show(v){
+  ["intro","test","result","browse"].forEach(n => $("v-"+n).classList.toggle("hidden", n !== v));
+  window.scrollTo({top:0, behavior: reduce ? "auto" : "smooth"});
+}
+
+/* ---------- 검사 ---------- */
+function startTest(){
+  answers = new Array(ITEMS.length).fill(null);
+  page = 0; t0 = Date.now();
+  clearInterval(timer);
+  timer = setInterval(tick, 1000); tick();
+  renderPage(); show("test");
+}
+function tick(){
+  const s = Math.floor((Date.now() - t0)/1000);
+  $("p-time").textContent = String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
+}
+function renderPage(){
+  const list = $("q-list");
+  let html = "";
+  const start = page*PER, end = Math.min(start+PER, ITEMS.length);
+  const vals = [-3,-2,-1,0,1,2,3];
+  const names = {"-3":"전혀 그렇지 않다","-2":"그렇지 않다","-1":"약간 그렇지 않다","0":"보통이다","1":"약간 그렇다","2":"그렇다","3":"매우 그렇다"};
+  for(let i=start;i<end;i++){
+    const it = ITEMS[i];
+    html += '<div class="q'+(answers[i]!==null?' done':'')+'" id="q-'+i+'" role="group" aria-labelledby="qt-'+i+'">'+
+      '<div><div class="n">'+(i+1)+' / '+ITEMS.length+'</div><div class="t" id="qt-'+i+'">'+esc(it.t)+'</div></div>'+
+      '<div class="lk"><span class="ends">그렇지 않다</span><div class="dots">'+
+      vals.map(v => '<button type="button" id="a-'+i+'-'+(v+3)+'" class="'+(v<0?'neg':v>0?'pos':'mid')+'" data-i="'+i+'" data-v="'+v+'" aria-label="'+names[v]+'" aria-pressed="'+(answers[i]===v)+'"></button>').join("")+
+      '</div><span class="ends">그렇다</span><div class="legend"><span>그렇지 않다</span><span>그렇다</span></div></div></div>';
+  }
+  list.innerHTML = html;
+  $("q-msg").textContent = "";
+  $("btn-prev").textContent = page === 0 ? "처음으로" : "이전";
+  $("btn-next").textContent = page === PAGES-1 ? "결과 보기" : "다음";
+  updateProgress();
+}
+function updateProgress(){
+  const n = answers.filter(a => a !== null).length;
+  $("p-count").textContent = n + " / " + ITEMS.length + " 응답";
+  $("p-page").textContent = (page+1) + " / " + PAGES + "쪽";
+  $("p-fill").style.width = (n/ITEMS.length*100) + "%";
+}
+$("q-list").addEventListener("click", e => {
+  const b = e.target.closest("button[data-i]");
+  if(!b) return;
+  const i = +b.dataset.i, v = +b.dataset.v;
+  answers[i] = v;
+  const q = $("q-"+i);
+  q.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(+x.dataset.v === v)));
+  q.classList.add("done"); q.classList.remove("missing");
+  updateProgress();
+  const end = Math.min((page+1)*PER, ITEMS.length);
+  for(let j=i+1;j<end;j++){
+    if(answers[j]===null){ $("q-"+j).scrollIntoView({behavior: reduce?"auto":"smooth", block:"center"}); return; }
+  }
+});
+$("btn-next").addEventListener("click", () => {
+  const start = page*PER, end = Math.min(start+PER, ITEMS.length);
+  const miss = [];
+  for(let i=start;i<end;i++) if(answers[i]===null) miss.push(i);
+  if(miss.length){
+    miss.forEach(i => $("q-"+i).classList.add("missing"));
+    $("q-msg").textContent = "이 쪽에 아직 답하지 않은 문항이 " + miss.length + "개 있습니다.";
+    $("q-"+miss[0]).scrollIntoView({behavior: reduce?"auto":"smooth", block:"center"});
+    return;
+  }
+  if(page < PAGES-1){ page++; renderPage(); window.scrollTo({top:0, behavior: reduce?"auto":"smooth"}); }
+  else finish();
+});
+$("btn-prev").addEventListener("click", () => {
+  if(page === 0){ clearInterval(timer); show("intro"); return; }
+  page--; renderPage(); window.scrollTo({top:0, behavior: reduce?"auto":"smooth"});
+});
+
+/* ---------- 채점 ---------- */
+function score(ans){
+  const sum = {}, cnt = {};
+  AXES.forEach(a => { sum[a.id]=0; cnt[a.id]=0; });
+  ITEMS.forEach((it,i) => { if(ans[i]!==null){ sum[it.ax] += it.k*ans[i]; cnt[it.ax]++; } });
+  const pct = {}, letters = [];
+  AXES.forEach(a => {
+    const p = cnt[a.id] ? Math.round(50 + 50*sum[a.id]/(3*cnt[a.id])) : 50;
+    pct[a.id] = p;
+    letters.push(p >= 50 ? a.a : a.b);
+  });
+  return {code: letters.slice(0,4).join("") + "-" + letters[4] + letters[5], pct};
+}
+function finish(){
+  clearInterval(timer);
+  const r = score(answers);
+  myCode = r.code; myPct = r.pct;
+  renderReport(myCode, myPct, false);
+  show("result");
+}
+
+/* ---------- 리포트 ---------- */
+function renderReport(code, pct, sample){
+  const base = code.slice(0,4), a = code[5], l = code[6];
+  const T = TYPES[base], sub = SUB[a+l];
+  let h = "";
+  if(sample){
+    h += '<div class="row" style="justify-content:space-between"><span class="tag warm">유형 살펴보기</span><button class="btn ghost" type="button" data-act="browse">유형 목록</button></div>';
+  }
+  h += '<div class="hero"><p class="eyebrow">'+(sample?'유형 리포트':'나의 결과')+'</p>'+
+       '<div class="code">'+base+'<span>-'+a+l+'</span></div>'+
+       '<h1>'+esc(T.name)+' · '+esc(sub)+'</h1>'+
+       '<div class="row"><span class="tag">'+MOD[a].name+'</span><span class="tag">'+MOD[l].name+'</span></div></div>';
+
+  if(sample){
+    h += '<div class="card"><h3>세부 성향 바꿔 보기</h3><div class="chips">'+
+      ["AL","AH","RL","RH"].map(s => '<button type="button" class="chip" data-sub="'+s+'" aria-pressed="'+(s===a+l)+'">'+base+'-'+s+' '+SUB[s]+'</button>').join("")+
+      '</div></div>';
+  }
+
+  if(pct){
+    const border = AXES.filter(x => pct[x.id] >= 45 && pct[x.id] <= 55).map(x => x.title);
+    h += '<div class="card"><h2>지표별 결과</h2>';
+    AXES.forEach(x => {
+      const p = pct[x.id], onA = p >= 50, val = onA ? p : 100-p;
+      const left = onA ? (100-p) : 50, width = Math.abs(p-50);
+      // 막대: 가운데(50) 기준으로 기운 방향으로 채움
+      const fl = onA ? 50 - width : 50;
+      h += '<div class="ax"><div class="ttl">'+x.title+'</div>'+
+        '<div class="lbl"><span class="'+(onA?'on':'off')+'">'+x.an+' '+x.a+' '+p+'%</span><span class="'+(onA?'off':'on')+'">'+(100-p)+'% '+x.b+' '+x.bn+'</span></div>'+
+        '<div class="tr" aria-hidden="true"><div class="f" style="left:'+fl+'%;width:'+width+'%"></div><div class="mid"></div></div></div>';
+    });
+    if(border.length){
+      h += '<p class="notice">'+border.join(", ")+' 지표는 양쪽 차이가 작은 경계 영역입니다. 이 지표는 상황에 따라 양쪽 성향이 모두 나타날 수 있으니, 반대편 설명도 함께 읽어 보세요.</p>';
+    }
+    h += '</div>';
+  }
+
+  h += '<div class="card"><h2>성격 프로필</h2><p>'+esc(T.profile)+'</p>'+
+       '<p>'+esc(MOD[a].text)+'</p></div>';
+
+  h += '<div class="two"><div class="card"><h3>강점</h3><ul class="list">'+T.strengths.map(s=>'<li>'+esc(s)+'</li>').join("")+'</ul></div>'+
+       '<div class="card"><h3>맹점과 발목을 잡는 것</h3><ul class="list">'+T.blind.map(s=>'<li>'+esc(s)+'</li>').join("")+'</ul></div></div>';
+
+  h += '<div class="card"><h2>다른 사람이 보는 나와 관계 패턴</h2><p>'+esc(T.others)+'</p><p>'+esc(MOD[l].text)+'</p></div>';
+
+  h += '<div class="card"><h2>잘 맞는 일과 가치</h2><p><b>잘 맞는 환경</b> · '+esc(T.env)+'</p>'+
+       '<div class="row"><b>중요한 가치</b>'+T.values.map(v=>'<span class="tag">'+esc(v)+'</span>').join("")+'</div></div>';
+
+  h += '<div class="card"><h2>성장 로드맵</h2><ol class="steps">'+
+       T.growth.map(g=>'<li><span>'+esc(g)+'</span></li>').join("")+
+       '<li><span>'+esc(MOD[a].tip)+'</span></li><li><span>'+esc(MOD[l].tip)+'</span></li></ol></div>';
+
+  h += '<div class="card"><h2>함께 이야기할 질문</h2><ol class="list">'+QUESTIONS.map(q=>'<li>'+esc(q)+'</li>').join("")+'</ol></div>';
+
+  if(!sample){
+    h += '<div class="card"><h3>결과 요약 공유</h3><p class="small muted">결과는 어디에도 저장되지 않습니다. 진행자에게 전달하거나 보관하려면 요약을 복사하세요.</p>'+
+         '<div class="row"><button class="btn" type="button" data-act="copy">결과 요약 복사</button><span class="small muted" id="copy-msg" role="status"></span></div>'+
+         '<textarea class="copybox hidden" id="copybox" readonly aria-label="결과 요약"></textarea></div>';
+  }
+
+  h += '<div class="row">'+
+       (sample ? (myCode ? '<button class="btn" type="button" data-act="mine">내 결과로 돌아가기</button>' : '<button class="btn" type="button" data-act="start">검사 시작하기</button>')
+               : '<button class="btn ghost" type="button" data-act="browse">전체 유형 살펴보기</button><button class="btn ghost" type="button" data-act="start">다시 검사하기</button>')+
+       '</div>';
+  h += '<p class="notice">이 결과는 응답 시점의 자기 보고를 바탕으로 한 참고 자료입니다. 사람은 상황과 시기에 따라 달라질 수 있으므로, 유형을 나를 가두는 이름이 아니라 대화를 시작하는 출발점으로 활용하세요.</p>';
+
+  $("v-result").innerHTML = h;
+  $("v-result").dataset.code = code;
+}
+function summary(){
+  const base = myCode.slice(0,4);
+  let s = "[성격유형검사 결과] " + myCode + " " + TYPES[base].name + " · " + SUB[myCode.slice(5)] + "\n";
+  AXES.forEach(x => { const p = myPct[x.id]; s += "- " + x.title + ": " + x.an + " " + p + "% / " + x.bn + " " + (100-p) + "%\n"; });
+  s += "성장 과제: " + TYPES[base].growth[0];
+  return s;
+}
+$("v-result").addEventListener("click", async e => {
+  const chip = e.target.closest("[data-sub]");
+  if(chip){
+    const base = $("v-result").dataset.code.slice(0,4);
+    renderReport(base + "-" + chip.dataset.sub, null, true);
+    const c = $("v-result").querySelector('[data-sub="'+chip.dataset.sub+'"]');
+    if(c) c.focus();
+    return;
+  }
+  const b = e.target.closest("[data-act]");
+  if(!b) return;
+  const act = b.dataset.act;
+  if(act === "start") startTest();
+  else if(act === "browse"){ backTo = "result"; openBrowse(); }
+  else if(act === "mine"){ renderReport(myCode, myPct, false); show("result"); }
+  else if(act === "copy"){
+    const text = summary(), box = $("copybox");
+    try{
+      await navigator.clipboard.writeText(text);
+      $("copy-msg").textContent = "복사했습니다. 메신저나 메모에 붙여 넣으세요.";
+    }catch(err){
+      box.value = text; box.classList.remove("hidden"); box.focus(); box.select();
+      $("copy-msg").textContent = "자동 복사가 막혀 있습니다. 아래 글을 길게 눌러 복사하세요.";
+    }
+  }
+});
+
+/* ---------- 전체 유형 ---------- */
+function openBrowse(){
+  const mine = myCode ? myCode.slice(0,4) : "";
+  $("tgrid").innerHTML = ORDER.map(c => '<button type="button" data-type="'+c+'" class="'+(c===mine?'me':'')+'"><b>'+c+'</b><span>'+esc(TYPES[c].name)+(c===mine?' · 나':'')+'</span></button>').join("");
+  show("browse");
+}
+$("tgrid").addEventListener("click", e => {
+  const b = e.target.closest("[data-type]");
+  if(!b) return;
+  const c = b.dataset.type;
+  const sub = (myCode && myCode.slice(0,4)===c) ? myCode.slice(5) : "AH";
+  renderReport(c + "-" + sub, null, true);
+  show("result");
+});
+$("btn-browse").addEventListener("click", () => { backTo = "intro"; openBrowse(); });
+$("btn-browse-back").addEventListener("click", () => {
+  if(backTo === "result" && myCode){ renderReport(myCode, myPct, false); show("result"); }
+  else show("intro");
+});
+$("btn-start").addEventListener("click", startTest);
+const ov=$("qr-overlay");
+$("btn-qr").addEventListener("click",()=>{ov.classList.remove("hidden");$("btn-qr-close").focus();});
+function closeQr(){ov.classList.add("hidden");$("btn-qr").focus();}
+$("btn-qr-close").addEventListener("click",closeQr);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!ov.classList.contains("hidden"))closeQr();});
+
+
+window.__score = score; window.__ITEMS = ITEMS;
+})();
+</script>
+</body>
+</html>
